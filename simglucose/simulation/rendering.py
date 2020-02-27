@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
+import numpy as np
 import logging
 from datetime import timedelta
 
@@ -12,7 +13,7 @@ class Viewer(object):
         self.patient_name = patient_name
         self.fig, self.axes, self.lines = self.initialize()
         self.update()
-
+        
     def initialize(self):
         plt.ion()
         fig, axes = plt.subplots(4)
@@ -34,7 +35,7 @@ class Viewer(object):
 
         axes[0].set_ylim([70, 180])
         axes[1].set_ylim([-5, 30])
-        axes[2].set_ylim([-0.5, 1])
+        axes[2].set_ylim([-0.05, 0.05])
         axes[3].set_ylim([0, 5])
 
         for ax in axes:
@@ -64,6 +65,16 @@ class Viewer(object):
     def update(self):
         self.fig.canvas.draw()
         self.fig.canvas.flush_events()
+        
+        try: __IPYTHON__
+        except NameError:
+            plt.pause(0.001)
+        else:
+            if __IPYTHON__:
+                display(self.fig)
+            else:
+                plt.pause(0.001)
+
 
     def render(self, data):
         self.lines[0].set_xdata(data.index.values)
@@ -118,6 +129,187 @@ class Viewer(object):
     def close(self):
         plt.close(self.fig)
 
+##############################################################################
+# Viewer for plotting internal states
+class StatesViewer(object):
+    def __init__(self, start_time, patient_name, figsize=None):
+        self.start_time = start_time
+        self.patient_name = patient_name
+        self.fig, self.axes, self.lines = self.initialize()
+        self.update()
+        
+    def initialize(self):
+        plt.ion()
+        fig1, axes1 = plt.subplots(2)
+        fig2, axes2 = plt.subplots(2)
+        axes2 = np.append(axes2, axes2[0].twinx())
+
+        axes1[0].set_ylabel('Glucose (Stomach)')
+        axes1[1].set_ylabel('Glucose (Subsystem)')
+        axes2[0].set_ylabel('Insulin (Subcut)')
+        axes2[2].set_ylabel('Insulin (Subsystem)')
+        axes2[1].set_ylabel('Insulin Concentration')
+
+        lineQsto1, = axes1[0].plot([], [], label='$Q_{sto1}$')
+        lineQsto2, = axes1[0].plot([], [], label='$Q_{sto2}$')
+        lineQgut,  = axes1[0].plot([], [], label='$Q_{gut}$')
+
+        lineGp, = axes1[1].plot([], [], label='$G_p$')
+        lineGt, = axes1[1].plot([], [], label='$G_t$')
+        lineGs, = axes1[1].plot([], [], label='$G_s$')
+        
+        lineIsc1, = axes2[0].plot([], [], label='$I_{sc1}$')
+        lineIsc2, = axes2[0].plot([], [], label='$I_{sc2}$')
+        lineIp,   = axes2[2].plot([], [], label='$I_p$', color='C2')
+        lineIl,   = axes2[2].plot([], [], label='$I_l$', color='C3')
+
+        lineX,  = axes2[1].plot([], [], label='$X$')
+        lineXL, = axes2[1].plot([], [], label='$X^L$')
+        lineId, = axes2[1].plot([], [], label='$I\'$')
+
+        lines = [lineQsto1, lineQsto2, lineQgut, 
+                 lineGp, lineGt, lineGs, 
+                 lineIsc1, lineIsc2, lineIp, lineIl, 
+                 lineX, lineXL, lineId]
+
+        handler,  label  = axes2[0].get_legend_handles_labels()
+        handler1, label1 = axes2[2].get_legend_handles_labels()
+        axes2[0].legend(handler+handler1, label+label1)
+        axes2[1].legend()
+
+        for ax in axes1:
+            ax.set_xlim(
+                [self.start_time, self.start_time + timedelta(hours=3)])
+            ax.legend()
+            
+        for ax in axes2:
+            ax.set_xlim(
+                [self.start_time, self.start_time + timedelta(hours=3)])
+        
+        # Plot zone patches
+        axes1[0].tick_params(labelbottom=False)
+        axes1[1].xaxis.set_minor_locator(mdates.AutoDateLocator())
+        axes1[1].xaxis.set_minor_formatter(mdates.DateFormatter('%H:%M\n'))
+        axes1[1].xaxis.set_major_locator(mdates.DayLocator())
+        axes1[1].xaxis.set_major_formatter(mdates.DateFormatter('\n%b %d'))
+        axes2[0].tick_params(labelbottom=False)
+        axes2[1].xaxis.set_minor_locator(mdates.AutoDateLocator())
+        axes2[1].xaxis.set_minor_formatter(mdates.DateFormatter('%H:%M\n'))
+        axes2[1].xaxis.set_major_locator(mdates.DayLocator())
+        axes2[1].xaxis.set_major_formatter(mdates.DateFormatter('\n%b %d'))
+
+        axes1[0].set_title(self.patient_name+' Glucose States')
+        axes2[0].set_title(self.patient_name+' Insulin States')
+
+        return [fig1, fig2], [axes1, axes2], lines
+
+    def update(self):
+        self.fig[0].canvas.draw()
+        self.fig[0].canvas.flush_events()
+        self.fig[1].canvas.draw()
+        self.fig[1].canvas.flush_events()
+        
+        try: __IPYTHON__
+        except NameError:
+            plt.pause(0.001)
+        else:
+            if __IPYTHON__:
+                display(self.fig[0])
+                display(self.fig[1])
+            else:
+                plt.pause(0.001)
+
+    def render(self, data):
+        self.lines[0].set_xdata(data.index.values)
+        self.lines[0].set_ydata(data['Qsto1'].values)
+
+        self.lines[1].set_xdata(data.index.values)
+        self.lines[1].set_ydata(data['Qsto2'].values)
+
+        self.lines[2].set_xdata(data.index.values)
+        self.lines[2].set_ydata(data['Qgut'].values)
+
+        self.axes[0][0].draw_artist(self.axes[0][0].patch)
+        self.axes[0][0].draw_artist(self.lines[0])
+        self.axes[0][0].draw_artist(self.lines[1])
+        self.axes[0][0].draw_artist(self.lines[2])
+
+        adjust_ylim(self.axes[0][0], 
+                    min( min(data['Qsto1']), min(data['Qsto2']), min(data['Qgut']) ),
+                    max( max(data['Qsto1']), max(data['Qsto2']), max(data['Qgut']) ) )
+        adjust_xlim(self.axes[0][0], data.index[-1])
+
+
+        self.lines[3].set_xdata(data.index.values)
+        self.lines[3].set_ydata(data['Gp'].values)
+
+        self.lines[4].set_xdata(data.index.values)
+        self.lines[4].set_ydata(data['Gt'].values)
+
+        self.lines[5].set_xdata(data.index.values)
+        self.lines[5].set_ydata(data['Gs'].values)
+        
+        self.axes[0][1].draw_artist(self.axes[0][1].patch)
+        self.axes[0][1].draw_artist(self.lines[3])
+        self.axes[0][1].draw_artist(self.lines[4])
+        self.axes[0][1].draw_artist(self.lines[5])
+        
+        adjust_ylim(self.axes[0][1], 
+                    min( min(data['Gp']), min(data['Gt']), min(data['Gs']) ),
+                    max( max(data['Gp']), max(data['Gt']), max(data['Gs']) ) )
+        adjust_xlim(self.axes[0][1], data.index[-1])
+
+        self.lines[6].set_xdata(data.index.values)
+        self.lines[6].set_ydata(data['Isc1'].values)
+
+        self.lines[7].set_xdata(data.index.values)
+        self.lines[7].set_ydata(data['Isc2'].values)
+
+        self.lines[8].set_xdata(data.index.values)
+        self.lines[8].set_ydata(data['Ip'].values)
+
+        self.lines[9].set_xdata(data.index.values)
+        self.lines[9].set_ydata(data['Il'].values)
+        
+        self.axes[1][0].draw_artist(self.axes[1][0].patch)
+        self.axes[1][0].draw_artist(self.lines[6])
+        self.axes[1][0].draw_artist(self.lines[7])
+        self.axes[1][0].draw_artist(self.lines[8])
+        self.axes[1][0].draw_artist(self.lines[9])
+        
+        adjust_ylim(self.axes[1][0], 
+                    min(min(data['Isc1']),min(data['Isc2'])), 
+                    max(max(data['Isc1']),max(data['Isc2'])))
+        adjust_xlim(self.axes[1][0], data.index[-1])
+        adjust_ylim(self.axes[1][2], 
+                    min(min(data['Ip']),min(data['Il'])), 
+                    max(max(data['Ip']),max(data['Il'])))
+        adjust_xlim(self.axes[1][2], data.index[-1])
+
+        self.lines[10].set_xdata(data.index.values)
+        self.lines[10].set_ydata(data['X'].values)
+
+        self.lines[11].set_xdata(data.index.values)
+        self.lines[11].set_ydata(data['XL'].values)
+
+        self.lines[12].set_xdata(data.index.values)
+        self.lines[12].set_ydata(data['Id'].values)
+
+        self.axes[1][1].draw_artist(self.axes[1][1].patch)
+        self.axes[1][1].draw_artist(self.lines[10])
+        self.axes[1][1].draw_artist(self.lines[11])
+        self.axes[1][1].draw_artist(self.lines[12])
+        adjust_ylim(self.axes[1][1], 
+                    min(min(data['X']),min(data['XL']),min(data['Id'])), 
+                    max(max(data['X']),max(data['XL']),max(data['Id'])))
+        adjust_xlim(self.axes[1][1], data.index[-1], xlabel=True)
+
+        self.update()
+
+    def close(self):
+        plt.close(self.fig[0])
+        plt.close(self.fig[1])
+
 
 def adjust_ylim(ax, ymin, ymax):
     ylim = ax.get_ylim()
@@ -152,7 +344,7 @@ def adjust_xlim(ax, timemax, xlabel=False):
     xlim[1] = xlim[1].replace(tzinfo=None)
 
     if timemax > xlim[1] - timedelta(minutes=30):
-        xmax = xlim[1] + timedelta(hours=6)
+        xmax = xlim[1] + timedelta(hours=20) # 6
         update = True
 
     if update:

@@ -1,6 +1,7 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 from .base import Patient
 import numpy as np
-from scipy.integrate import ode
 import pandas as pd
 from collections import namedtuple
 import logging
@@ -32,7 +33,7 @@ class T1DPatient(Patient):
         self._params = params
         if init_state is None:
             init_state = self._params.iloc[2:15]
-        self.init_state = init_state
+        self.init_state = np.array(init_state, dtype=float) #.to_numpy()
         self.t0 = t0
         self.reset()
 
@@ -64,11 +65,11 @@ class T1DPatient(Patient):
 
     @property
     def state(self):
-        return self._odesolver.y
+        return self.x.astype(np.float)
 
-    @property
-    def t(self):
-        return self._odesolver.t
+#    @property
+#    def t(self):
+#        return self.t
 
     @property
     def sample_time(self):
@@ -102,19 +103,12 @@ class T1DPatient(Patient):
         # Update last input
         self._last_action = action
 
-        # ODE solver
-        # print('Current simulation time: {}'.format(self.t))
-        # print(self._last_Qsto)
-        self._odesolver.set_f_params(
-            action, self._params, self._last_Qsto, self._last_foodtaken)
-        if self._odesolver.successful():
-            self._odesolver.integrate(self._odesolver.t + self.sample_time)
-        else:
-            logger.error('ODE solver failed!!')
-            raise
-
+        # Patient model here        
+        self.x += self.model(self.x, action, self._params, self._last_Qsto, self._last_foodtaken)
+        self.t = self.t + self.sample_time
+        
     @staticmethod
-    def model(t, x, action, params, last_Qsto, last_foodtaken):
+    def model(x, action, params, last_Qsto, last_foodtaken):
         dxdt = np.zeros(13)
         d = action.CHO * 1000  # g -> mg
         insulin = action.insulin * 6000 / params.BW  # U/min -> pmol/kg/min
@@ -234,12 +228,12 @@ class T1DPatient(Patient):
         '''
         Reset the patient state to default intial state
         '''
+        self.x = np.copy(self.init_state)
+        self.t = self.t0
+
         self._last_Qsto = self.init_state[0] + self.init_state[1]
         self._last_foodtaken = 0
         self.name = self._params.Name
-
-        self._odesolver = ode(self.model).set_integrator('dopri5')
-        self._odesolver.set_initial_value(self.init_state, self.t0)
 
         self._last_action = Action(CHO=0, insulin=0)
         self.is_eating = False
@@ -287,3 +281,4 @@ if __name__ == '__main__':
     ax[1].plot(t, CHO)
     ax[2].plot(t, insulin)
     plt.show()
+

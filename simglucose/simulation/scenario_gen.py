@@ -36,7 +36,8 @@ class RandomScenario(Scenario):
 
         # Probability of taking each meal
         # [breakfast, snack1, lunch, snack2, dinner, snack3]
-        prob = [0.95, 0.3, 0.95, 0.3, 0.95, 0.3]
+        prob = [0.95, 0.3, 0.95, 0.3, 0.95, 0.3] # ORIGINAL
+        #prob = [1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
         time_lb = np.array([5, 9, 10, 14, 16, 20]) * 60
         time_ub = np.array([9, 10, 14, 16, 20, 23]) * 60
         time_mu = np.array([7, 9.5, 12, 15, 18, 21.5]) * 60
