@@ -34,7 +34,7 @@ class T1DSimEnv(gym.Env):
         if patient_name is None:
             patient_name = 'adolescent#001'
         patient = T1DPatient.withName(patient_name)
-        sensor = CGMSensor.withName('GuardianRT', seed=seeds[1])
+        sensor = CGMSensor.withName('Navigator', seed=seeds[1])
         hour = self.np_random.randint(low=0.0, high=24.0)
         # start_time = datetime(2018, 1, 1, hour, 0, 0) # random start time
         start_time = datetime(2018, 1, 1, 6, 0, 0) # fixed start time (6am)
