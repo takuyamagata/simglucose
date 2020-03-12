@@ -105,7 +105,7 @@ class T1DSimEnv(gym.Env):
             observation = np.append(obs.CGM, info['patient_state'])
         else:
             observation = np.array(obs.CGM)
-        return observation
+        return observation, info
 
     def seed(self, seed=None):
         self.np_random, seed1 = seeding.np_random(seed=seed)
