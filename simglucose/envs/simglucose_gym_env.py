@@ -100,12 +100,12 @@ class T1DSimEnv(gym.Env):
         start_time = datetime(2018, 1, 1, 6, 0, 0) # fixed start time (6am)
         self.env.scenario = RandomScenario(start_time=start_time, seed=seeds[2])
         
-        obs, _, _, info = self.env.reset()
+        step = self.env.reset()
         if self.observe_internal_state:
-            observation = np.append(obs.CGM, info['patient_state'])
+            observation = np.append(step.observation.CGM, step.info['patient_state'])
         else:
-            observation = np.array(obs.CGM)
-        return observation, info
+            observation = np.array(step.observation.CGM)
+        return observation, step.info
 
     def seed(self, seed=None):
         self.np_random, seed1 = seeding.np_random(seed=seed)
