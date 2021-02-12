@@ -98,7 +98,7 @@ class T1DSimEnv(gym.Env):
         hour = self.np_random.randint(low=0.0, high=24.0)
         # start_time = datetime(2018, 1, 1, hour, 0, 0) # random start time
         start_time = datetime(2018, 1, 1, 6, 0, 0) # fixed start time (6am)
-        self.env.scenario = RandomScenario(start_time=start_time, seed=seeds[2])
+        self.env.scenario = RandomScenario(start_time=start_time, seed=seeds)
         
         step = self.env.reset()
         if self.observe_internal_state:
