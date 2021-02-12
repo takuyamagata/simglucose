@@ -1,7 +1,9 @@
-# simglucose
+# simglucose (Drift branch)
 [![Downloads](https://pepy.tech/badge/simglucose)](https://pepy.tech/project/simglucose)
 [![Downloads](https://pepy.tech/badge/simglucose/month)](https://pepy.tech/project/simglucose)
 [![Downloads](https://pepy.tech/badge/simglucose/week)](https://pepy.tech/project/simglucose)
+
+***This branch (drift), has modified to have drifting virtual patient's parameter from one to the other over time.***
 
 A Type-1 Diabetes simulator implemented in Python for Reinforcement Learning purpose
 
